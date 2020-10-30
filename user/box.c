@@ -2,22 +2,17 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <string.h>
-
 #include <sys/socket.h>
 #include <linux/netlink.h>
 
-#include "utils.h"
+#include "user.h"
+#include "base64.h"
+#include "exec.h"
+
 // CONSTANTS
 #define MAX_PAYLOAD 1024
-#define COMMAND_MAX_LEN 40
 #define NETLINK_SAFEBOX 29
-#define MAX_PATH_LEN 256
-
-#define CMD_CD "cd"
-#define CMD_LS "ls"
-#define CMD_EXIT "exit"
 
 // GLOBALS
 int sock_fd;
@@ -25,9 +20,10 @@ struct msghdr msg;
 struct nlmsghdr *nlh = NULL;
 struct sockaddr_nl src_addr, dest_addr;
 struct iovec iov;
-static char pwd[MAX_PATH_LEN];
-static char root[MAX_PATH_LEN];
-static char display_pwd[MAX_PATH_LEN];
+extern char pwd[MAX_PATH_LEN];
+extern char root[MAX_PATH_LEN];
+extern char display_pwd[MAX_PATH_LEN];
+
 static char delim[] = " ";
 
 // send pid to kernel
@@ -61,123 +57,72 @@ void send_pid()
     sendmsg(sock_fd, &msg, 0);
 }
 
-int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
-{
-    // TODO
-    printf("\n");
-    return 0;
-}
-
-int _ls(char path[COMMAND_MAX_LEN])
-{
-    DIR* dp; struct dirent* ep;
-    dp = opendir(path);
-    if (dp != NULL)
-    {
-        while (ep=readdir(dp))
-        {
-            if(strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0)
-                continue;
-            printf("%s  ", ep->d_name);
-        }
-        printf("\n");
-        closedir(dp);
-        return 0;
-    }
-    else
-        return -1;
-}
-
-int exec_ls(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
-{
-    switch(cmd_count)
-    {
-        // ls
-        case 1:
-        {
-            int suc = _ls(pwd);
-            if (suc == -1)
-                printf("Couldn't open dir %s\n", display_pwd);
-            break;
-        } // case 1 
-
-        // TODO: ls path
-        // ls path
-        case 2:
-        {
-            DIR* dp; struct dirent* ep;
-            char ls_path[COMMAND_MAX_LEN]; memset(ls_path, 0, COMMAND_MAX_LEN);
-            char display_path[COMMAND_MAX_LEN]; memset(display_path, 0, COMMAND_MAX_LEN);
-            char target_path[COMMAND_MAX_LEN]; memset(target_path, 0, COMMAND_MAX_LEN);
-            strcpy(ls_path, splited_cmd[1]);
-
-            // ls_path is abspath
-            if (strncmp(ls_path, "/", 1) == 0)
-            {
-                strcpy(target_path, pwd);
-                strcat(target_path, ls_path);
-                strcpy(display_path, display_pwd);
-                strcat(display_path, ls_path);
-                int suc = _ls(target_path);
-                if (suc == -1)
-                    printf("Couldn't open dir %s\n", display_path);
-            }
-            // ls_path is relpath
-            else
-            {
-                strcpy(target_path, pwd);
-                strcat(target_path, "/");
-                strcat(target_path, ls_path); // /home/safebox/bowen/./ddd
-                char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
-                normpath(norm, target_path);
-                if (strncmp(norm, root, strlen(root)) != 0)
-                {
-                    printf("Invalid dir.\n");
-                    break;
-                }
-                
-                strcpy(display_path, display_pwd);
-                strcat(display_path, ls_path);
-                char norm_display[COMMAND_MAX_LEN]; memset(norm_display, 0, COMMAND_MAX_LEN);
-                normpath(norm_display, display_path);
-                int suc = _ls(norm);
-                if (suc == -1)
-                    printf("Could't open dir %s\n", norm_display);
-            }
-
-            break;
-        } // case 2
-
-        default:
-            printf("Command arguments error.\n");
-
-    } // switch
-
-    return 0;
-}
-
-
-int execute(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
-{
-    char main_cmd[COMMAND_MAX_LEN]; memset(main_cmd, 0, COMMAND_MAX_LEN);
-    strcpy(main_cmd, splited_cmd[0]);
-
-    if(strcmp(main_cmd, CMD_CD) == 0)
-        return exec_cd(splited_cmd, cmd_count);
-    else if(strcmp(main_cmd, CMD_LS) == 0)
-        return exec_ls(splited_cmd, cmd_count);
-    else if(strcmp(main_cmd, CMD_EXIT) == 0)
-        return -1;
-    else
-    {
-        printf("Command not found.\n");
-        return 0;
-    }
-}
-
-
 int main(int argc, char *argv[])
 {
+    // socket
+    sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_SAFEBOX);
+    if (sock_fd < 0)
+        return -1;
+
+    struct passwd *pw;
+    int authentication = 0; // check if authentication succeed
+
+    // 获取当前用户所有信息
+    pw = get_user();
+
+    // check_user()查看当前用户是否注册过保险箱，若有，则返回值为相应的密码，若无，则返回0
+    send_pid();
+    char *password = check_user(pw->pw_uid);
+    char input[100]; memset(input, 0, 100);
+    
+    if (password)
+    {
+        printf("Please enter your password \n");
+        scanf("%s", input); getchar();
+        if (strcmp(password, input) == 0)
+        {
+            printf("Welcome \n");
+            authentication = 1;
+        }
+        else
+            printf("Wrong password \n");
+    }
+    else
+    {
+        printf("Creating a new safebox, please set the password\n");
+        scanf("%s", input); getchar();
+        FILE *fp;
+
+        send_pid();
+        if (!(fp=fopen("/home/safebox/password.dat","a+")))
+        {
+            printf("Error in open file!\n");
+            return -1;
+        }
+        // 将int型的账号密码转为字符串
+        char uid[100];
+        sprintf(uid, "%d", pw->pw_uid);
+
+        // 这部分不知道为啥，不能两个同时加密后再同时fprintf()写入，会有问题，我猜是buf1和buf2内存冲突了
+        // 所以我就换了一下思路，一个一个写入fp
+        char *buf1 = (char *)malloc(50);
+        base64_encode(uid, &buf1);
+        fprintf(fp, "\n%s ", buf1);
+        free(buf1);
+
+        char *buf2 = (char *)malloc(50);
+        base64_encode(input, &buf2);
+        fprintf(fp, "%s", buf2);
+        free(buf2);
+
+        printf("Successfully create a safebox, welcome!\n");
+        fclose(fp);
+        authentication = 1;
+    }
+
+    if (authentication == 0)
+        return -1;
+
     memset(pwd, 0, MAX_PATH_LEN);
     memset(root, 0, MAX_PATH_LEN); 
     memset(display_pwd, 0, MAX_PATH_LEN);
@@ -185,10 +130,7 @@ int main(int argc, char *argv[])
     strcpy(root, "/home/safebox/bowen");
     strcpy(display_pwd, "");
 
-    // socket
-    sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_SAFEBOX);
-    if (sock_fd < 0)
-        return -1;
+
 
     // interactive terminal
     while(1)

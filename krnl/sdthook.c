@@ -29,6 +29,7 @@ typedef asmlinkage long (*orig_chdir_t)(struct pt_regs *regs);
 typedef asmlinkage long (*orig_mkdir_t)(struct pt_regs *regs);
 typedef asmlinkage long (*orig_symlinkat_t)(struct pt_regs *regs);
 typedef asmlinkage long (*orig_linkat_t)(struct pt_regs *regs);
+typedef asmlinkage long (*orig_rename_t)(struct pt_regs *regs);
 
 // functions
 void netlink_release(void);
@@ -43,6 +44,7 @@ orig_chdir_t orig_chdir = NULL;
 orig_mkdir_t orig_mkdir = NULL;
 orig_symlinkat_t orig_symlinkat = NULL;
 orig_linkat_t orig_linkat = NULL;
+orig_rename_t orig_rename = NULL;
 unsigned int level;
 pte_t *pte;
 
@@ -130,6 +132,25 @@ asmlinkage long hooked_linkat(struct pt_regs *regs)
 	return sys_ret;
 }
 
+asmlinkage long hooked_rename(struct pt_regs *regs)
+{
+	long sys_ret, safe_ret;
+	char buffer[PATH_MAX];
+	long nbytes;
+
+	// di, si: filepath, dx: flags
+  	nbytes = strncpy_from_user(buffer, (char*)regs->di, PATH_MAX);
+
+	// check if it's visiting SAFEBOX
+	safe_ret = SafeboxCheckPath(regs, buffer);
+	if (safe_ret == -1)
+		return safe_ret;
+
+	// original sys_openat
+	sys_ret = orig_rename(regs);
+  	return sys_ret;
+}
+
 static int __init safebox_init(void)
 {
 	// get sys_call_table
@@ -142,9 +163,10 @@ static int __init safebox_init(void)
 	orig_mkdir = (orig_mkdir_t) sys_call_table[__NR_mkdir];
 	orig_symlinkat = (orig_symlinkat_t) sys_call_table[__NR_symlinkat];
 	orig_linkat = (orig_linkat_t) sys_call_table[__NR_linkat];
+	orig_rename = (orig_rename_t) sys_call_table[__NR_rename];
 
-	printk("Info: sys_openat: %lx; sys_chdir: %lx; sys_mkdir: %lx; sys_symlinkat: %lx; sys_linkat: %lx;\n",\
-				(long)orig_openat, (long)orig_chdir, (long)orig_mkdir, (long)orig_symlinkat, (long)orig_linkat);
+	printk("Info: sys_openat: %lx; sys_chdir: %lx; sys_mkdir: %lx; sys_symlinkat: %lx; sys_linkat: %lx;; sys_rename: %lx;\n",\
+				(long)orig_openat, (long)orig_chdir, (long)orig_mkdir, (long)orig_symlinkat, (long)orig_linkat, (long)orig_rename);
 
 	// change PTE to allow writing
 	pte = lookup_address((unsigned long)sys_call_table, &level);
@@ -156,6 +178,7 @@ static int __init safebox_init(void)
 	sys_call_table[__NR_mkdir] = (demo_sys_call_ptr_t) hooked_mkdir;
 	sys_call_table[__NR_symlinkat] = (demo_sys_call_ptr_t) hooked_symlinkat;
 	sys_call_table[__NR_linkat] = (demo_sys_call_ptr_t) hooked_linkat;
+	sys_call_table[__NR_rename] = (demo_sys_call_ptr_t) hooked_rename;
 	set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
 
 	printk("Info: sys_call_table hooked!\n");
@@ -175,6 +198,7 @@ static void __exit safebox_exit(void)
 	sys_call_table[__NR_mkdir] = (demo_sys_call_ptr_t) orig_mkdir;
 	sys_call_table[__NR_symlinkat] = (demo_sys_call_ptr_t) orig_symlinkat;
 	sys_call_table[__NR_linkat] = (demo_sys_call_ptr_t) orig_linkat;
+	sys_call_table[__NR_rename] = (demo_sys_call_ptr_t) orig_rename;
 	set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
 
     netlink_release();

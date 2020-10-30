@@ -1,0 +1,1 @@
+cmd_/home/bowen/work/safebox/krnl/SafeboxModule.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds  --build-id  -o /home/bowen/work/safebox/krnl/SafeboxModule.ko /home/bowen/work/safebox/krnl/SafeboxModule.o /home/bowen/work/safebox/krnl/SafeboxModule.mod.o ;  true
