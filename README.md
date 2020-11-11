@@ -30,3 +30,15 @@
 
 ## Notes
  - `di, si, dx, r10, r8, r9`: [pt_regs structure](https://www.codenong.com/cs106088896/)
+
+# FileVault GUI Version
+## prerequisite
+**Qt 5.14.2**
+
+## Progress and Details
+- 身份认证 + 访问保险箱中文件
+
+## Demo
+![login](screenshot/demo2.png)
+![filevault](screenshot/demo1.png)
+  
