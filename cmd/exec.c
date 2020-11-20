@@ -43,7 +43,7 @@ int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
             }
             else//relpath
             {
-                strcpy(target_path, pwd);
+                strcpy(target_path, display_pwd);
                 strcat(target_path, "/");
                 strcat(target_path, cd_path); 
                 char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
@@ -114,12 +114,12 @@ int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
             }
             else
             {
-                strcpy(target_file, pwd);
+                strcpy(target_file, display_pwd);
                 strcat(target_file, "/");
                 strcat(target_file, rm_file); 
                 char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
                     
-                normpath(norm, target_path);
+                normpath(norm, target_file);
                     
                 if (strncmp(norm, root, strlen(root)) != 0) //can't remove file which isn't under user's pwd.
                 {
@@ -128,7 +128,7 @@ int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 }
                     
                 strcpy(display_path, display_pwd);
-                strcat(display_path, ls_path);
+                strcat(display_path, rm_file);
                 char norm_display[COMMAND_MAX_LEN]; memset(norm_display, 0, COMMAND_MAX_LEN);
                     
                 normpath(norm_display, display_path);
@@ -183,15 +183,86 @@ int exec_mkdir(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     return 0;
 }
 
-int exec_mvin(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+
+
+int _mv(char oldfile[COMMAND_MAX_LEN], char newfile[COMMAND_MAX_LEN])
 {
-    printf("haven't done nothing yet...\n");
+    return rename(oldfile, newfile);
+}
+
+int in_or_out(char path[COMMAND_MAX_LEN]) //inside or outside the vault.
+{
+    if (strncmp(norm, root, strlen(root)) != 0) //outside
+    {
+        return 1;       
+    }
     return 0;
 }
 
-int exec_mvout(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+
+int exec_mv(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 {
-    printf("haven't done nothing yet...\n");
+    switch(cmd_count)
+    {
+        case 3:
+            {
+                char old_file[COMMAND_MAX_LEN]; memset(old_file, 0, COMMAND_MAX_LEN);
+                char new_file[COMMAND_MAX_LEN]; memset(new_file, 0, COMMAND_MAX_LEN);
+                strcpy(old_file, splited_cmd[1]);
+                strcpy(new_file, splited_cmd[2]);
+                char temp_newfile[COMMAND_MAX_LEN]; memset(temp_newfile, 0, COMMAND_MAX_LEN);
+                char target_newfile[COMMAND_MAX_LEN]; memset(target_newfile, 0, COMMAND_MAX_LEN);
+                char target_oldfile[COMMAND_MAX_LEN]; memset(target_oldfile, 0, COMMAND_MAX_LEN);
+                    
+                if (strncmp(old_file, "/", 1) == 0)
+                {
+                    strcpy(target_oldfile, pwd);
+                    strcat(target_oldfile, old_file);
+                }
+                else
+                {
+                    char temp_oldfile[COMMAND_MAX_LEN]; memset(temp_oldfile, 0, COMMAND_MAX_LEN);
+                    strcpy(temp_oldfile, display_pwd);
+                    strcat(temp_oldfile, "/");
+                    strcat(temp_oldfile, old_file); 
+                    
+                    normpath(target_oldfile, temp_oldfile);
+                }
+                
+                if (strncmp(new_file, "/", 1) == 0)
+                {
+                    strcpy(target_newfile, pwd);
+                    strcat(target_newfile, new_file);
+                }
+                else
+                {
+                    char temp_newfile[COMMAND_MAX_LEN]; memset(temp_newfile, 0, COMMAND_MAX_LEN);
+                    strcpy(temp_newfile, display_pwd);
+                    strcat(temp_newfile, "/");
+                    strcat(temp_newfile, new_file); 
+                    
+                    normpath(target_oldfile, temp_newile);
+                }
+                
+                if (in_or_out(target_oldfile) && in_or_out(target_newfile))
+                {
+                    printf("choose at least one path inside the vault.\n");      
+                }
+                else
+                {
+                    int suc = _mv(target_oldfile, target_newfile);
+                    if (suc == -1)
+                    {
+                        printf("move file failed, check file path.\n");
+                    }
+                }
+                break;
+            }
+        default:
+            {
+                printf("Argument error.\n");
+            }
+    }
     return 0;
 }
 
