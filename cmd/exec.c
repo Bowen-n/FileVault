@@ -80,6 +80,121 @@ int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     }
     return 0;
 }
+
+int _rm(char file[COMMAND_MAX_LEN])
+{
+    return remove(file);
+}
+
+int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+{
+    switch(cmd_count)
+    {
+        case 1:
+        {
+            printf("usage: rm [filename]\n");
+            break;
+        }
+        case 2:
+        {
+            char rm_file[COMMAND_MAX_LEN]; memset(rm_file, 0, COMMAND_MAX_LEN);
+            char target_file[COMMAND_MAX_LEN]; memset(target_file, 0, COMMAND_MAX_LEN);
+            strcpy(rm_file, splited_cmd[1]);
+            
+            if (strncmp(rm_file, "/", 1) == 0)
+            {
+                strcpy(target_file, pwd);
+                strcat(target_file, rm_file);
+                int suc = _rm(target_file);
+                
+                if (suc == -1)
+                {
+                    printf("Failed, please check file path.\n");
+                }
+            }
+            else
+            {
+                strcpy(target_file, pwd);
+                strcat(target_file, "/");
+                strcat(target_file, rm_file); 
+                char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
+                    
+                normpath(norm, target_path);
+                    
+                if (strncmp(norm, root, strlen(root)) != 0) //can't remove file which isn't under user's pwd.
+                {
+                    printf("Illegal operation.\n");
+                    break;
+                }
+                    
+                strcpy(display_path, display_pwd);
+                strcat(display_path, ls_path);
+                char norm_display[COMMAND_MAX_LEN]; memset(norm_display, 0, COMMAND_MAX_LEN);
+                    
+                normpath(norm_display, display_path);
+                    
+                int suc = _ls(norm);
+                if (suc == -1)
+                {
+                    printf("File %s doesn't exist.\n", norm_display);
+                }
+            }
+            break;
+        }
+        default:
+        {
+            printf("Command arguments error.\n");
+        }
+    }
+    return 0;
+}
+
+int _mkdir(char path[COMMAND_MAX_LEN])
+{
+    return mkdir(path);
+}
+
+int exec_mkdir(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+{
+    switch(cmd_count)
+    {
+        case 1:
+            {
+                printf("usage: mkdir [dir_name]");
+                break;
+            }
+        case 2:
+            {
+                char mk_dir[COMMAND_MAX_LEN]; memset(mk_dir, 0, COMMAND_MAX_LEN);
+                strcpy(mk_dir, splited_cmd[1]);
+                
+                int suc = _mkdir(target_dir)
+                if (suc == -1)
+                {
+                    printf("Couldn't create directory.\n")
+                }
+                break;                
+            }
+        default:
+            {
+                printf("Argument error.\n");
+            }  
+    }
+    return 0;
+}
+
+int exec_mvin(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+{
+    printf("haven't done nothing yet...\n");
+    return 0;
+}
+
+int exec_mvout(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+{
+    printf("haven't done nothing yet...\n");
+    return 0;
+}
+
 //NMJ's modification ends here.
 
 int _ls(char path[COMMAND_MAX_LEN])
@@ -170,7 +285,6 @@ int exec_ls(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     return 0;
 }
 
-
 int execute(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 {
     char main_cmd[COMMAND_MAX_LEN]; memset(main_cmd, 0, COMMAND_MAX_LEN);
@@ -179,6 +293,8 @@ int execute(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     if(strcmp(main_cmd, CMD_CD) == 0)
         return exec_cd(splited_cmd, cmd_count);
     else if(strcmp(main_cmd, CMD_LS) == 0)
+        return exec_ls(splited_cmd, cmd_count);
+    else if(strcmp(main_cmd, CMD_CD) == 0)
         return exec_ls(splited_cmd, cmd_count);
     else if(strcmp(main_cmd, CMD_EXIT) == 0)
         return -1;
