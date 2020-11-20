@@ -1,12 +1,86 @@
 #include "exec.h"
 
+//NMJ's modification begins here.
+int _cd(char path[COMMAND_MAX_LEN])
+{
+    return chdir(path);
+}
 
 int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 {
-    // TODO
-    printf("\n");
+    switch(cmd_count)
+    {
+        case 1:
+        {
+            _cd(pwd);
+            break;
+        }
+        case 2:
+        {
+            char cd_path[COMMAND_MAX_LEN]; memset(cd_path, 0, COMMAND_MAX_LEN);
+            char display_path[COMMAND_MAX_LEN]; memset(display_path, 0, COMMAND_MAX_LEN);
+            char target_path[COMMAND_MAX_LEN]; memset(target_path, 0, COMMAND_MAX_LEN);
+            strcpy(cd_path, splited_cmd[1]);
+            
+            if (strncmp(cd_path, "/", 1) == 0)//abspath
+            {
+                strcpy(target_path, pwd);
+                strcat(target_path, cd_path);
+                strcpy(display_path, display_pwd);
+                strcat(display_path, cd_path);
+                
+                int suc = _cd(target_path)
+                if (suc == -1)
+                {
+                    printf("Invalid cd path.\n");
+                }
+                else
+                {
+                    memset(display_pwd, 0, COMMAND_MAX_LEN); // change display path
+                    strcpy(display_pwd, display_path);   
+                }
+                break;
+            }
+            else//relpath
+            {
+                strcpy(target_path, pwd);
+                strcat(target_path, "/");
+                strcat(target_path, cd_path); 
+                char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
+                
+                normpath(norm, target_path);
+                
+                if (strncmp(norm, pwd, strlen(pwd)) != 0) //root doesn't have parent directory.
+                {
+                    printf("Illegal dir.\n");
+                    break;
+                }
+                
+                strcpy(display_path, display_pwd);
+                strcat(display_path, cd_path);
+                char norm_display[COMMAND_MAX_LEN]; memset(norm_display, 0, COMMAND_MAX_LEN);
+                
+                normpath(norm_display, display_path);
+                
+                int suc = _cd(norm);
+                if (suc == -1)
+                {
+                    printf("Invalid cd path.\n");
+                }
+                else
+                {
+                    memset(display_pwd, 0, COMMAND_MAX_LEN); // change display path
+                    strcpy(display_pwd, norm_display);
+                }
+                break;
+            }
+        default:
+            printf("Arguments error. Format: cd [path]");
+        }
+    }
     return 0;
 }
+//NMJ's modification ends here.
 
 int _ls(char path[COMMAND_MAX_LEN])
 {
