@@ -1,6 +1,6 @@
 #include "exec.h"
 
-//NMJ's modification begins here.
+
 int _cd(char path[COMMAND_MAX_LEN])
 {
     return chdir(path);
@@ -12,7 +12,10 @@ int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     {
         case 1:
         {
-            _cd(pwd);
+            _cd(root);
+            memset(pwd, 0, COMMAND_MAX_LEN);
+	    strcpy(pwd, root);
+	    memset(display_pwd, 0, COMMAND_MAX_LEN);
             break;
         }
         case 2:
@@ -24,12 +27,13 @@ int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
             
             if (strncmp(cd_path, "/", 1) == 0)//abspath
             {
-                strcpy(target_path, pwd);
+                strcpy(target_path, root);
                 strcat(target_path, cd_path);
-                strcpy(display_path, display_pwd);
-                strcat(display_path, cd_path);
+                //strcpy(display_path, display_pwd);
+		memset(display_path, 0, COMMAND_MAX_LEN);                
+		strcpy(display_path, cd_path);
                 
-                int suc = _cd(target_path)
+                int suc = _cd(target_path);
                 if (suc == -1)
                 {
                     printf("Invalid cd path.\n");
@@ -37,26 +41,31 @@ int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 else
                 {
                     memset(display_pwd, 0, COMMAND_MAX_LEN); // change display path
-                    strcpy(display_pwd, display_path);   
+                    strcpy(display_pwd, display_path);
+		    memset(pwd, 0, COMMAND_MAX_LEN);
+		    strcpy(pwd, root);
+		    strcat(pwd, display_pwd);   
                 }
                 break;
             }
             else//relpath
             {
-                strcpy(target_path, display_pwd);
+                strcpy(target_path, pwd);
                 strcat(target_path, "/");
                 strcat(target_path, cd_path); 
                 char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
                 
                 normpath(norm, target_path);
+		printf("%s\n", norm);
                 
-                if (strncmp(norm, pwd, strlen(pwd)) != 0) //root doesn't have parent directory.
+                if (strncmp(norm, root, strlen(root)) != 0) //root doesn't have parent directory.
                 {
                     printf("Illegal dir.\n");
                     break;
                 }
                 
                 strcpy(display_path, display_pwd);
+		strcat(display_path, "/");
                 strcat(display_path, cd_path);
                 char norm_display[COMMAND_MAX_LEN]; memset(norm_display, 0, COMMAND_MAX_LEN);
                 
@@ -71,7 +80,11 @@ int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 {
                     memset(display_pwd, 0, COMMAND_MAX_LEN); // change display path
                     strcpy(display_pwd, norm_display);
+		    memset(pwd, 0, COMMAND_MAX_LEN);
+		    strcpy(pwd, root);
+		    strcat(pwd, norm_display);
                 }
+		//printf("%s\n", pwd);
                 break;
             }
         default:
@@ -99,11 +112,12 @@ int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
         {
             char rm_file[COMMAND_MAX_LEN]; memset(rm_file, 0, COMMAND_MAX_LEN);
             char target_file[COMMAND_MAX_LEN]; memset(target_file, 0, COMMAND_MAX_LEN);
+	    char display_path[COMMAND_MAX_LEN]; memset(display_path, 0, COMMAND_MAX_LEN);
             strcpy(rm_file, splited_cmd[1]);
             
             if (strncmp(rm_file, "/", 1) == 0)
             {
-                strcpy(target_file, pwd);
+                strcpy(target_file, root);
                 strcat(target_file, rm_file);
                 int suc = _rm(target_file);
                 
@@ -120,8 +134,16 @@ int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
                     
                 normpath(norm, target_file);
+		
+		char full_path[COMMAND_MAX_LEN]; memset(full_path, 0, COMMAND_MAX_LEN);
+		strcpy(full_path, root);
+		strcat(full_path, norm);
+		char full_norm[COMMAND_MAX_LEN]; memset(full_norm, 0, COMMAND_MAX_LEN); 
+		normpath(full_norm, full_path);		
+		
+		printf("%s\n", full_norm);
                     
-                if (strncmp(norm, root, strlen(root)) != 0) //can't remove file which isn't under user's pwd.
+                if (strncmp(full_norm, root, strlen(root)) != 0) //can't remove file which isn't under user's pwd.
                 {
                     printf("Illegal operation.\n");
                     break;
@@ -133,7 +155,7 @@ int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                     
                 normpath(norm_display, display_path);
                     
-                int suc = _ls(norm);
+                int suc = _rm(full_norm);
                 if (suc == -1)
                 {
                     printf("File %s doesn't exist.\n", norm_display);
@@ -151,7 +173,7 @@ int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 
 int _mkdir(char path[COMMAND_MAX_LEN])
 {
-    return mkdir(path);
+    return mkdir(path,0777);
 }
 
 int exec_mkdir(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
@@ -167,12 +189,19 @@ int exec_mkdir(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
             {
                 char mk_dir[COMMAND_MAX_LEN]; memset(mk_dir, 0, COMMAND_MAX_LEN);
                 strcpy(mk_dir, splited_cmd[1]);
-                
-                int suc = _mkdir(target_dir)
+		char target_dir[COMMAND_MAX_LEN]; memset(target_dir, 0, COMMAND_MAX_LEN);                
+		//strcpy(target_dir, display_pwd);
+		//strcat(target_dir, "/");		
+		//strcat(target_dir, mk_dir);
+		//printf("%s\n",pwd);
+		//printf("%s\n",target_dir);
+
+                int suc = _mkdir(mk_dir);
                 if (suc == -1)
                 {
-                    printf("Couldn't create directory.\n")
+                    printf("Couldn't create directory.\n");
                 }
+		//printf("%d\n", suc);
                 break;                
             }
         default:
@@ -185,14 +214,33 @@ int exec_mkdir(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 
 
 
-int _mv(char oldfile[COMMAND_MAX_LEN], char newfile[COMMAND_MAX_LEN])
+int _mv(char oldfile[MAX_PATH_LEN], char newfile[MAX_PATH_LEN])
 {
+    printf("%s\n", oldfile);
+    printf("%s\n", newfile);
+    //if (link(oldfile, newfile) == 0)
+    //{
+	//if (unlink(oldfile) == 0)
+	//{
+	//    return 0;
+	//}
+	//else
+	//{
+	//    printf("unlink failed\n");
+	//    return -1;
+	//}
+    //}
+    //else
+    //{
+	//printf("link failed\n");
+	//return -1;
+    //}
     return rename(oldfile, newfile);
 }
 
 int in_or_out(char path[COMMAND_MAX_LEN]) //inside or outside the vault.
 {
-    if (strncmp(norm, root, strlen(root)) != 0) //outside
+    if (strncmp(path, root, strlen(root)) != 0) //outside
     {
         return 1;       
     }
@@ -210,19 +258,19 @@ int exec_mv(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 char new_file[COMMAND_MAX_LEN]; memset(new_file, 0, COMMAND_MAX_LEN);
                 strcpy(old_file, splited_cmd[1]);
                 strcpy(new_file, splited_cmd[2]);
-                char temp_newfile[COMMAND_MAX_LEN]; memset(temp_newfile, 0, COMMAND_MAX_LEN);
-                char target_newfile[COMMAND_MAX_LEN]; memset(target_newfile, 0, COMMAND_MAX_LEN);
-                char target_oldfile[COMMAND_MAX_LEN]; memset(target_oldfile, 0, COMMAND_MAX_LEN);
+                //char temp_newfile[COMMAND_MAX_LEN]; memset(temp_newfile, 0, COMMAND_MAX_LEN);
+                char target_newfile[MAX_PATH_LEN]; memset(target_newfile, 0, MAX_PATH_LEN);
+                char target_oldfile[MAX_PATH_LEN]; memset(target_oldfile, 0, MAX_PATH_LEN);
                     
                 if (strncmp(old_file, "/", 1) == 0)
                 {
-                    strcpy(target_oldfile, pwd);
+                    strcpy(target_oldfile, root);
                     strcat(target_oldfile, old_file);
                 }
                 else
                 {
                     char temp_oldfile[COMMAND_MAX_LEN]; memset(temp_oldfile, 0, COMMAND_MAX_LEN);
-                    strcpy(temp_oldfile, display_pwd);
+                    strcpy(temp_oldfile, pwd);
                     strcat(temp_oldfile, "/");
                     strcat(temp_oldfile, old_file); 
                     
@@ -231,17 +279,17 @@ int exec_mv(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 
                 if (strncmp(new_file, "/", 1) == 0)
                 {
-                    strcpy(target_newfile, pwd);
+                    strcpy(target_newfile, root);
                     strcat(target_newfile, new_file);
                 }
                 else
                 {
                     char temp_newfile[COMMAND_MAX_LEN]; memset(temp_newfile, 0, COMMAND_MAX_LEN);
-                    strcpy(temp_newfile, display_pwd);
+                    strcpy(temp_newfile, pwd);
                     strcat(temp_newfile, "/");
                     strcat(temp_newfile, new_file); 
                     
-                    normpath(target_oldfile, temp_newile);
+                    normpath(target_newfile, temp_newfile);
                 }
                 
                 if (in_or_out(target_oldfile) && in_or_out(target_newfile))
@@ -250,6 +298,7 @@ int exec_mv(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 }
                 else
                 {
+		    
                     int suc = _mv(target_oldfile, target_newfile);
                     if (suc == -1)
                     {
@@ -266,7 +315,122 @@ int exec_mv(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     return 0;
 }
 
-//NMJ's modification ends here.
+int exec_mvin(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+{
+    switch(cmd_count)
+    {
+	case 3:
+	{
+	    char old_file[COMMAND_MAX_LEN]; memset(old_file, 0, COMMAND_MAX_LEN);
+            char new_file[COMMAND_MAX_LEN]; memset(new_file, 0, COMMAND_MAX_LEN);
+	    char target_newfile[MAX_PATH_LEN]; memset(target_newfile, 0, MAX_PATH_LEN);
+            strcpy(old_file, splited_cmd[1]);
+            strcpy(new_file, splited_cmd[2]);
+	    
+	    if (strncmp(old_file, "/", 1) != 0)
+	    {
+		printf("use absolute path for the first argument.\n");
+		break;
+	    }
+	    else
+	    {
+	        if (strncmp(new_file, "/", 1) == 0)
+		{
+		    strcpy(target_newfile, root);
+                    strcat(target_newfile, new_file);
+		}
+		else
+		{
+		    char temp_newfile[COMMAND_MAX_LEN]; memset(temp_newfile, 0, COMMAND_MAX_LEN);
+                    strcpy(temp_newfile, pwd);
+                    strcat(temp_newfile, "/");
+                    strcat(temp_newfile, new_file); 
+                    
+                    normpath(target_newfile, temp_newfile);
+		}
+
+		if (in_or_out(old_file) && !(in_or_out(target_newfile)))
+                {
+                    int suc = _mv(old_file, target_newfile);
+                    if (suc == -1)
+                    {
+                        printf("move file failed, check file path.\n");
+                    }         
+                }
+		else
+		{
+		    printf("Illegal path.\n");
+		}		
+	    }
+	    break;
+	}
+	default:
+	{
+	    printf("argument error.\n");
+	}
+    }
+    return 0;
+}
+
+int exec_mvout(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
+{
+    switch(cmd_count)
+    {
+	case 3:
+	{
+	    char old_file[COMMAND_MAX_LEN]; memset(old_file, 0, COMMAND_MAX_LEN);
+            char new_file[COMMAND_MAX_LEN]; memset(new_file, 0, COMMAND_MAX_LEN);
+	    char target_oldfile[MAX_PATH_LEN]; memset(target_oldfile, 0, MAX_PATH_LEN);
+            strcpy(old_file, splited_cmd[1]);
+            strcpy(new_file, splited_cmd[2]);
+	    
+	    if (strncmp(new_file, "/", 1) != 0)
+	    {
+		printf("use absolute path for the second argument.\n");
+		break;
+	    }
+	    else
+	    {
+	        if (strncmp(old_file, "/", 1) == 0)
+		{
+		    strcpy(target_oldfile, root);
+                    strcat(target_oldfile, old_file);
+		}
+		else
+		{
+		    char temp_oldfile[COMMAND_MAX_LEN]; memset(temp_oldfile, 0, COMMAND_MAX_LEN);
+                    strcpy(temp_oldfile, pwd);
+                    strcat(temp_oldfile, "/");
+                    strcat(temp_oldfile, old_file); 
+                    
+                    normpath(target_oldfile, temp_oldfile);
+		}
+
+		if (!(in_or_out(target_oldfile)) && in_or_out(new_file))
+                {
+                    int suc = _mv(target_oldfile, new_file);
+                    if (suc == -1)
+                    {
+                        printf("move file failed, check file path.\n");
+                    }         
+                }
+		else
+		{
+		    printf("Illegal path.\n");
+		}		
+	    }
+	    break;
+	}
+	default:
+	{
+	    printf("argument error.\n");
+	}
+    }
+    return 0;
+}
+
+
+
 
 int _ls(char path[COMMAND_MAX_LEN])
 {
@@ -356,6 +520,7 @@ int exec_ls(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     return 0;
 }
 
+
 int execute(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 {
     char main_cmd[COMMAND_MAX_LEN]; memset(main_cmd, 0, COMMAND_MAX_LEN);
@@ -365,8 +530,16 @@ int execute(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
         return exec_cd(splited_cmd, cmd_count);
     else if(strcmp(main_cmd, CMD_LS) == 0)
         return exec_ls(splited_cmd, cmd_count);
-    else if(strcmp(main_cmd, CMD_CD) == 0)
-        return exec_ls(splited_cmd, cmd_count);
+    else if(strcmp(main_cmd, CMD_RM) == 0)
+        return exec_rm(splited_cmd, cmd_count);
+    else if(strcmp(main_cmd, CMD_MKDIR) == 0)
+        return exec_mkdir(splited_cmd, cmd_count);
+    else if(strcmp(main_cmd, CMD_MV) == 0)
+        return exec_mv(splited_cmd, cmd_count);
+    else if(strcmp(main_cmd, CMD_MVIN) == 0)
+	return exec_mvin(splited_cmd, cmd_count);
+    else if(strcmp(main_cmd, CMD_MVOUT) == 0)
+	return exec_mvout(splited_cmd, cmd_count);
     else if(strcmp(main_cmd, CMD_EXIT) == 0)
         return -1;
     else
