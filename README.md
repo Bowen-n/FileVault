@@ -32,6 +32,7 @@
   - `ls [dir]`:列出dir目录下的所有文件/文件夹，[dir]为空则列出当前目录下文件/文件夹。
   - `cd [dir]`:改变工作目录到dir，[dir]为空则改变到根目录。
   - `rm [file/dir]`:删除文件/文件夹。
+  - `mkdir [dir]`:在当前工作目录下创建文件夹dir。
   - `mv [file1] [file2]`:将保险箱内的文件file1移动到保险箱内的新位置file2。
   - `mvin [file1] [file2]`:将保险箱外的文件file1移动到保险箱内的新位置file2，file1必须使用绝对路径。
   - `mvout [file1] [file2]`:将保险箱内的文件file1移动到保险箱外的新位置file2，file2必须使用绝对路径。
