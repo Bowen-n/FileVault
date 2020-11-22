@@ -118,6 +118,11 @@ int main(int argc, char *argv[])
         printf("Successfully create a safebox, welcome!\n");
         fclose(fp);
         authentication = 1;
+	    
+	char username[COMMAND_MAX_LEN]; memset(username, 0, COMMAND_MAX_LEN); //Modified here.
+	strcpy(username, getlogin());
+	mkdir(username);
+	chdir(username);
     }
 
     if (authentication == 0)
@@ -126,8 +131,10 @@ int main(int argc, char *argv[])
     memset(pwd, 0, MAX_PATH_LEN);
     memset(root, 0, MAX_PATH_LEN); 
     memset(display_pwd, 0, MAX_PATH_LEN);
-    strcpy(pwd, "/home/safebox/bowen"); // TODO: should be modified to current user safebox directory
-    strcpy(root, "/home/safebox/bowen");
+    strcpy(pwd, "/home/safebox/");
+    strcpy(root, "/home/safebox/");
+    strcat(pwd, getlogin()); // Modified here
+    strcat(root, getlogin());
     strcpy(display_pwd, "");
 
 
