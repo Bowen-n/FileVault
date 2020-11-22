@@ -56,7 +56,7 @@ int exec_cd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
                 char norm[COMMAND_MAX_LEN]; memset(norm, 0, COMMAND_MAX_LEN);
                 
                 normpath(norm, target_path);
-		printf("%s\n", norm);
+		//printf("%s\n", norm);
                 
                 if (strncmp(norm, root, strlen(root)) != 0) //root doesn't have parent directory.
                 {
@@ -141,7 +141,7 @@ int exec_rm(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 		char full_norm[COMMAND_MAX_LEN]; memset(full_norm, 0, COMMAND_MAX_LEN); 
 		normpath(full_norm, full_path);		
 		
-		printf("%s\n", full_norm);
+		//printf("%s\n", full_norm);
                     
                 if (strncmp(full_norm, root, strlen(root)) != 0) //can't remove file which isn't under user's pwd.
                 {
@@ -216,8 +216,8 @@ int exec_mkdir(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
 
 int _mv(char oldfile[MAX_PATH_LEN], char newfile[MAX_PATH_LEN])
 {
-    printf("%s\n", oldfile);
-    printf("%s\n", newfile);
+    //printf("%s\n", oldfile);
+    //printf("%s\n", newfile);
     //if (link(oldfile, newfile) == 0)
     //{
 	//if (unlink(oldfile) == 0)
