@@ -18,7 +18,7 @@ char* User::check_user(int uid)
 
     if (!(fp=fopen("/home/safebox/password.dat","r")))
     {
-        printf("Error in open file!\n");
+        printf("Error in open password.dat while checking user!\n");
         exit(1);
     }
 
@@ -57,7 +57,7 @@ int User::set_password(char* pswd)
     FILE *fp;
     if (!(fp=fopen("/home/safebox/password.dat","a+")))
     {
-        printf("Error in open file!\n");
+        printf("Error in open password.dat while setting password!\n");
         exit(1);
     }
 
@@ -74,4 +74,39 @@ int User::set_password(char* pswd)
 
     fclose(fp);
     return 1;
+}
+
+void User::reset_password(char* pswd)
+{
+    FILE *fp;
+    if (!(fp=fopen("/home/safebox/password.dat","r+")))
+    {
+        printf("Error in open password.dat while setting password!\n");
+        exit(1);
+    }
+
+    // int uid; sprintf(uid, "%d", pw->pw_uid);
+    char *buf1 = (char *)malloc(40);
+    char label[30];
+
+    while (fscanf(fp,"%s", label))
+    {   
+        base64_decode(label, &buf1);
+        if (atoi(buf1) == pw->pw_uid)
+        {
+            free(buf1);
+            char *buf2 = (char *)malloc(40);
+            base64_encode(pswd, &buf2);
+            fprintf(fp, " %s", buf2);
+            free(buf2);
+            break;
+        }
+        else
+            fscanf(fp," %s");
+            
+        if (feof(fp))
+            break;
+    }
+
+    fclose(fp);
 }

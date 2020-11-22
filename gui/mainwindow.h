@@ -6,6 +6,11 @@
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QBoxLayout>
+#include <QMessageBox>
+#include <QFileDialog>
+#include <QInputDialog>
+#include <QFile>
+#include <QDir>
 
 #include "user.h"
 #include "comm.h"
@@ -29,6 +34,10 @@ private:
     // widgets
     QTreeWidget *file_tree;
     QPushButton *refresh_button;
+    QPushButton *input_button;
+    QPushButton *output_button;
+    QPushButton *delete_button;
+    QPushButton *directory_button;
 
     // layouts
     QHBoxLayout *header_layout;
@@ -44,11 +53,17 @@ private:
 
     string parseFileSize(size_t);
     string parseFileTime(time_t);
+    string FindPath(QTreeWidgetItem*);
+    QString CurrentDir();
     bool isDirectory(mode_t);
 
 public slots:
     void listDirectory(QTreeWidgetItem*, int);
     void updateFileTree();
+    void InputFile();
+    void OutputFile();
+    void DeleteFile();
+    void CreateDirectory();
 
 public:
     MainWindow(QWidget *parent = 0);

@@ -20,6 +20,7 @@ public:
     char *pname();
     int set_password(char*);
     char *check_user(int);
+    void reset_password(char*);
 
 };
 
