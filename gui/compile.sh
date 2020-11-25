@@ -1,4 +1,1 @@
-qmake -project
-echo QT += core gui widgets >> *.pro
-qmake
-make
+qmake -project;echo QT += core gui widgets >> gui.pro;qmake;make;

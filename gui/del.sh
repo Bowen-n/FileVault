@@ -1,1 +1,1 @@
-rm -rf *.pro *.o Makefile gui .qmake* moc_*
+rm -rf *.pro *.o Makefile gui .qmake*;rm -rf moc_*;

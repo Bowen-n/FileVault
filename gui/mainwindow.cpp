@@ -100,7 +100,7 @@ void MainWindow::listDirectory(QTreeWidgetItem* item, int)
 {
     if (item->child(0) != NULL)
         return;
-
+    netlinker->send_pid();
     // get fullpath
     string full_path = FindPath(item);
     
@@ -267,23 +267,9 @@ string MainWindow::parseFileTime(time_t time)
 
 void MainWindow::InputFile()
 {
+    netlinker->send_pid();
     QString path;
-    // if (file_tree->currentItem())
-    // {
-    //     QTreeWidgetItem *CurrentItem = file_tree->currentItem();
-    //     path = QString::fromStdString(FindPath(CurrentItem));
-    //     QFileInfo FileInfo(path);
-    //     if (FileInfo.isFile())
-    //     {
-    //         QStringList temp = path.split("/");
-    //         path = temp[0];
-    //         for (int i = 1; i < temp.size() - 1; ++i)
-    //             path += "/" + temp[i];
-    //     }
-    //     path += "/";
-    // }
-    // else
-    //     path = QString::fromStdString(root_path);
+
     path = CurrentDir();
     //定义文件对话框类
 	QFileDialog *fileDialog = new QFileDialog(this);
@@ -312,6 +298,7 @@ void MainWindow::InputFile()
 
 void MainWindow::OutputFile()
 {
+    netlinker->send_pid();
     if (file_tree->currentItem())
     {
         QTreeWidgetItem *CurrentItem = file_tree->currentItem();
@@ -342,6 +329,7 @@ void MainWindow::OutputFile()
 
 void MainWindow::DeleteFile()
 {
+    netlinker->send_pid();
     if (file_tree->currentItem())
     {
         QMessageBox::StandardButton result = QMessageBox::information(NULL, "Caution", "File or directory will be deleted permanently. Continue?",QMessageBox::Yes|QMessageBox::No);
@@ -369,27 +357,12 @@ void MainWindow::DeleteFile()
 
 void MainWindow::CreateDirectory()
 {
+    netlinker->send_pid();
     bool isOK;
     QString text = QInputDialog::getText(this, "Create Directory", "Please input directory name", QLineEdit::Normal, "", &isOK);
     if (isOK)
     {
         QString path;
-        // if (file_tree->currentItem())
-        // {
-        //     QTreeWidgetItem *CurrentItem = file_tree->currentItem();
-        //     path = QString::fromStdString(FindPath(CurrentItem));
-        //     QFileInfo FileInfo(path);
-        //     if (FileInfo.isFile())
-        //     {
-        //         QStringList temp = path.split("/");
-        //         path = temp[0];
-        //         for (int i = 1; i < temp.size() - 1; ++i)
-        //             path += "/" + temp[i];
-        //     }
-        //     path += "/";
-        // }
-        // else
-        //     path = QString::fromStdString(root_path);
         path = CurrentDir();
 
         QDir dir;
