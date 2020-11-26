@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
     send_pid();
     char *password = check_user(pw->pw_uid);
     char input[100]; memset(input, 0, 100);
+    char *temp = (char*)malloc(100);
     
     if (password)
     {
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
         }
         else
             printf("Wrong password \n");
+	
     }
     else
     {
@@ -118,24 +120,26 @@ int main(int argc, char *argv[])
         printf("Successfully create a safebox, welcome!\n");
         fclose(fp);
         authentication = 1;
-	    
-	char username[COMMAND_MAX_LEN]; memset(username, 0, COMMAND_MAX_LEN); //Modified here.
+	
+	char username[COMMAND_MAX_LEN]; memset(username, 0, COMMAND_MAX_LEN);
 	strcpy(username, getlogin());
-	mkdir(username);
-	chdir(username);
+	chdir("/home/safebox");
+	mkdir(username, 0777);
     }
 
     if (authentication == 0)
         return -1;
-
+    
     memset(pwd, 0, MAX_PATH_LEN);
     memset(root, 0, MAX_PATH_LEN); 
     memset(display_pwd, 0, MAX_PATH_LEN);
     strcpy(pwd, "/home/safebox/");
     strcpy(root, "/home/safebox/");
-    strcat(pwd, getlogin()); // Modified here
+    strcat(pwd, getlogin()); // TODO: should be modified to current user safebox directory
     strcat(root, getlogin());
     strcpy(display_pwd, "");
+    
+    chdir(root);
 
 
 
