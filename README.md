@@ -1,6 +1,7 @@
 # Linux FileVault
+Project for **IS415: 系统软件课程设计**
 
-## prerequisite
+## Prerequisite
 - Linux kernel 4.18
 - Qt 5.14.2
 
