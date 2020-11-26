@@ -81,32 +81,48 @@ void User::reset_password(char* pswd)
     FILE *fp;
     if (!(fp=fopen("/home/safebox/password.dat","r+")))
     {
-        printf("Error in open password.dat while setting password!\n");
+        printf("Error in open password.dat while resetting password!\n");
+        exit(1);
+    }
+
+    FILE *new_fp;
+    if (!(new_fp=fopen("/home/safebox/password_temp.dat","w")))
+    {
+        printf("Error in create password_temp.dat while resetting password!\n");
         exit(1);
     }
 
     // int uid; sprintf(uid, "%d", pw->pw_uid);
     char *buf1 = (char *)malloc(40);
     char label[30];
+    char passwd[30];
 
     while (fscanf(fp,"%s", label))
     {   
         base64_decode(label, &buf1);
         if (atoi(buf1) == pw->pw_uid)
         {
+            fprintf(new_fp, "%s", label);
             free(buf1);
             char *buf2 = (char *)malloc(40);
             base64_encode(pswd, &buf2);
-            fprintf(fp, " %s", buf2);
+            fprintf(new_fp, " %s\n", buf2);
             free(buf2);
             break;
         }
         else
-            fscanf(fp," %s");
+        {
+            fprintf(new_fp, "%s", label);
+            fscanf(fp," %s", passwd);
+            fprintf(new_fp, " %s\n", passwd);
+        }
             
         if (feof(fp))
             break;
     }
 
     fclose(fp);
+    fclose(new_fp);
+    QFile::remove(QString::fromStdString("/home/safebox/password.dat"));
+    QFile::rename(QString::fromStdString("/home/safebox/password_temp.dat"),QString::fromStdString("/home/safebox/password.dat"));
 }

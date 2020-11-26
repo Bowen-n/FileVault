@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <iostream>
+#include <QFile>
+
 using namespace std;
 
 class User {
