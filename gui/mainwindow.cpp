@@ -276,7 +276,7 @@ void MainWindow::InputFile()
 	//定义文件对话框标题
 	fileDialog->setWindowTitle(QStringLiteral("选中文件"));
 	//设置默认文件路径
-	fileDialog->setDirectory(".");
+	fileDialog->setDirectory("/home/bowen/testfile");
 	//设置文件过滤器
 	// fileDialog->setNameFilter(tr("File(*.*)"));
 	//设置可以选择多个文件,默认为只能选择一个文件
@@ -304,7 +304,7 @@ void MainWindow::OutputFile()
         QTreeWidgetItem *CurrentItem = file_tree->currentItem();
         QFileDialog *fileDialog = new QFileDialog(this);
         fileDialog->setWindowTitle(QStringLiteral("选中文件"));
-        fileDialog->setDirectory(".");
+        fileDialog->setDirectory("/home/bowen/testfile");
         fileDialog->setFileMode(QFileDialog::Directory);
         fileDialog->setViewMode(QFileDialog::Detail);
         QStringList fileNames;

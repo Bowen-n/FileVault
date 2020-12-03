@@ -8,40 +8,6 @@ User::User()
     pw = getpwuid(uid);
 }
 
-
-char* User::check_user(int uid)
-{
-    char label[30], password[100];
-    memset(label, 0, 30); memset(password, 0, 30);
-    char *buf = (char *)malloc(40);
-    FILE *fp;
-
-    if (!(fp=fopen("/home/safebox/password.dat","r")))
-    {
-        printf("Error in open password.dat while checking user!\n");
-        exit(1);
-    }
-
-    while (fscanf(fp,"%s %s", label, password))
-    {   
-        base64_decode(label, &buf);
-        if (atoi(buf) == uid)
-        {
-            base64_decode(password, &buf);
-            fclose(fp);
-            return buf;
-        }
-        if (feof(fp))
-        {
-            break;
-        }
-    }
-    free(buf);
-    fclose(fp);
-    return NULL;
-}
-
-
 int User::pid()
 {
     return pw->pw_uid;
@@ -51,6 +17,73 @@ char* User::pname()
 {
     return pw->pw_name;
 }
+
+bool User::check_user(int uid, uint8_t ret_pswd[SHA256_BYTES])
+{
+    // check user if login before and return its password's hash
+    uint8_t hash_uid[SHA256_BYTES];
+
+    FILE *fp;
+    if (!(fp=fopen("/home/safebox/password.dat","r")))
+    {
+        printf("Error in open password.dat while checking user!\n");
+        exit(1);
+    }
+
+    char _uid[20]; sprintf(_uid, "%d", uid);
+    sha256(_uid, strlen(_uid), hash_uid);
+
+    while(true)
+    {
+        uint8_t hash[SHA256_BYTES];
+
+        // read uid's hash
+        for(int i=0; i<SHA256_BYTES; i++)
+        {
+            uint8_t tmp[1];
+            fscanf(fp, "%02x", tmp);
+            hash[i] = tmp[0];
+        }
+    
+        // check if uid equal to current user
+        bool flag = true;
+        for(int i=0; i<SHA256_BYTES; i++)
+        {
+            if(hash_uid[i] != hash[i])
+            {
+                flag = false;
+                break;
+            }
+        }
+
+        // read pswd's hash
+        fscanf(fp, " ");
+        for(int i=0; i<SHA256_BYTES; i++)
+        {
+            uint8_t tmp[1];
+            fscanf(fp, "%02x", tmp);
+            ret_pswd[i] = tmp[0];
+        }
+        fscanf(fp, "\n");
+
+        // if uid found, return pswd's hash
+        if (flag == true)
+        {
+            fclose(fp);
+            return true;
+        }
+
+        if(feof(fp))
+            break;
+    }
+
+    for(int i=0; i<SHA256_BYTES; i++)
+        ret_pswd[i] = 0;
+
+    fclose(fp);
+    return false;
+}
+
 
 int User::set_password(char* pswd)
 {
@@ -62,19 +95,24 @@ int User::set_password(char* pswd)
     }
 
     char uid[20]; sprintf(uid, "%d", pw->pw_uid);
-    char *buf1 = (char *)malloc(40);
-    base64_encode(uid, &buf1);
-    fprintf(fp, "\n%s ", buf1);
-    free(buf1);
 
-    char *buf2 = (char *)malloc(40);
-    base64_encode(pswd, &buf2);
-    fprintf(fp, "%s", buf2);
-    free(buf2);
+    uint8_t hash[SHA256_BYTES];
+    sha256(uid, strlen(uid), hash);
+
+    for(int i=0; i<sizeof(hash); i++)
+        fprintf(fp, "%02x", hash[i]);
+    fprintf(fp, " ");
+
+    sha256(pswd, strlen(pswd), hash);
+
+    for(int i=0; i<sizeof(hash); i++)
+        fprintf(fp, "%02x", hash[i]);
+    fprintf(fp, "\n");
 
     fclose(fp);
     return 1;
 }
+
 
 void User::reset_password(char* pswd)
 {
@@ -92,31 +130,67 @@ void User::reset_password(char* pswd)
         exit(1);
     }
 
-    // int uid; sprintf(uid, "%d", pw->pw_uid);
-    char *buf1 = (char *)malloc(40);
-    char label[30];
-    char passwd[30];
+    uint8_t hash_pswd[SHA256_BYTES];
+    uint8_t hash_uid[SHA256_BYTES];
 
-    while (fscanf(fp,"%s", label))
-    {   
-        base64_decode(label, &buf1);
-        if (atoi(buf1) == pw->pw_uid)
+    uint8_t hash_orig_uid[SHA256_BYTES];
+    uint8_t hash_orig_pswd[SHA256_BYTES];
+
+    char _uid[20]; sprintf(_uid, "%d", pw->pw_uid);
+    sha256(_uid, strlen(_uid), hash_uid);
+    sha256(pswd, strlen(pswd), hash_pswd);
+
+    while(true)
+    {
+        // read uid's hash
+        for(int i=0; i<SHA256_BYTES; i++)
         {
-            fprintf(new_fp, "%s", label);
-            free(buf1);
-            char *buf2 = (char *)malloc(40);
-            base64_encode(pswd, &buf2);
-            fprintf(new_fp, " %s\n", buf2);
-            free(buf2);
-            break;
+            uint8_t tmp[1];
+            fscanf(fp, "%02x", tmp);
+            hash_orig_uid[i] = tmp[0];
+        }
+        fscanf(fp, " ");
+        // read password's hash
+        for(int i=0; i<SHA256_BYTES; i++)
+        {
+            uint8_t tmp[1];
+            fscanf(fp, "%02x", tmp);
+            hash_orig_pswd[i] = tmp[0];
+        }
+        fscanf(fp, "\n");
+
+        // check if uid equals to current user's
+        bool flag = true;
+        for(int i=0; i<SHA256_BYTES; i++)
+        {
+            if(hash_uid[i] != hash_orig_uid[i])
+            {
+                flag = false;
+                break;
+            }
+        }
+
+        if (flag == true)
+        {
+            // write uid and new password to new file
+            for(int i=0; i<SHA256_BYTES; i++)
+                fprintf(new_fp, "%02x", hash_uid[i]);
+            fprintf(new_fp, " ");
+            for(int i=0; i<SHA256_BYTES; i++)
+                fprintf(new_fp, "%02x", hash_pswd[i]);
+            fprintf(new_fp, "\n");
         }
         else
         {
-            fprintf(new_fp, "%s", label);
-            fscanf(fp," %s", passwd);
-            fprintf(new_fp, " %s\n", passwd);
+            // write uid and old password to new file
+            for(int i=0; i<SHA256_BYTES; i++)
+                fprintf(new_fp, "%02x", hash_orig_uid[i]);
+            fprintf(new_fp, " ");
+            for(int i=0; i<SHA256_BYTES; i++)
+                fprintf(new_fp, "%02x", hash_orig_pswd[i]);
+            fprintf(new_fp, "\n");
         }
-            
+
         if (feof(fp))
             break;
     }

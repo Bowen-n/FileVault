@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "sha256.h"
 #include <iostream>
 #include <QFile>
 
@@ -21,7 +22,7 @@ public:
     int pid();
     char *pname();
     int set_password(char*);
-    char *check_user(int);
+    bool check_user(int, uint8_t[SHA256_BYTES]);
     void reset_password(char*);
 
 };

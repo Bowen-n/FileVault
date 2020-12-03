@@ -12,7 +12,7 @@ Project for **IS415: 系统软件课程设计**
   - 如何区分管理程序与其他程序：保险箱管理程序每次操作都会通过netlink发送其pid(process id)。
 - 用户模块
   - 用户身份认证。若用户user已注册，则引导输入密码；若未注册，则设置密码并为其创建一个以其名称命名的保险箱文件夹，如/home/safebox/user，每个用户只能将文件存在自己的文件夹中。
-  - 保险箱现有用户id和密码经过base64加密后存储在/home/safebox/password.dat
+  - 保险箱现有用户id和密码经过sha256加密后存储在/home/safebox/password.dat
 
 |重载的系统调用|屏蔽的命令|
 |---|---|
@@ -31,7 +31,6 @@ Project for **IS415: 系统软件课程设计**
 - `mv [file1] [file2]`:将保险箱内的文件file1移动到保险箱内的新位置file2。
 - `mvin [file1] [file2]`:将保险箱外的文件file1移动到保险箱内的新位置file2，file1必须使用绝对路径。
 - `mvout [file1] [file2]`:将保险箱内的文件file1移动到保险箱外的新位置file2，file2必须使用绝对路径。
-- `chpswd`: 修改保险箱密码。
 
 ## GUI
 ![login](screenshot/demo2.png)

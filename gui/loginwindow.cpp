@@ -56,8 +56,9 @@ bool LoginWindow::loginBefore()
     netlinker->send_pid();
 
     // struct passwd *pw = get_user();
-    char *password_edit = user->check_user(user->pid());
-    return (password_edit == NULL) ? false:true;
+    uint8_t password[SHA256_BYTES];
+    bool suc = user->check_user(user->pid(), password);
+    return suc;
 }
 
 void LoginWindow::ResetPassword()
@@ -91,15 +92,25 @@ void LoginWindow::ResetDialog()
     // Process when OK button is clicked
     if (dialog.exec() == QDialog::Accepted) {
         QString new_pass = new_password->text();
-        char *correct_pswd = user->check_user(user->pid());
-        if (strcmp(correct_pswd, old_password->text().toStdString().c_str()) == 0)
+        uint8_t correct_pswd_hash[SHA256_BYTES];
+        user->check_user(user->pid(), correct_pswd_hash);
+
+        // compare old password
+        uint8_t hash[SHA256_BYTES];
+        const char* old_pswd = old_password->text().toStdString().c_str();
+        sha256(old_pswd, strlen(old_pswd), hash);
+
+        for(int i=0; i<SHA256_BYTES; i++)
         {
-            user->reset_password(const_cast<char*> (new_pass.toStdString().c_str()));
+            if (hash[i] != correct_pswd_hash[i])
+            {
+                QMessageBox::warning(this,"Warning", "The old password is wrong!");
+                return;
+            }
         }
-        else
-        {
-            QMessageBox::warning(this,"Warning", "The old password is wrong!");
-        }
+
+        user->reset_password(const_cast<char*> (new_pass.toStdString().c_str()));
+
     }
 }
 
@@ -113,20 +124,27 @@ void LoginWindow::parsePassword()
         // get password_edit
         netlinker->send_pid();
 
-        char *correct_pswd = user->check_user(user->pid());
+        uint8_t correct_pswd_hash[SHA256_BYTES];
+        user->check_user(user->pid(), correct_pswd_hash);
+        const char *input_pswd = input.toStdString().c_str();
+        uint8_t hash[SHA256_BYTES];
+        sha256(input_pswd, strlen(input_pswd), hash);
 
         // compare
-        if (strcmp(correct_pswd, input.toStdString().c_str()) == 0)
+        for(int i=0; i<SHA256_BYTES; i++)
         {
-            status_label->setText(QString("Status: Login succeed"));
-            this->close();
-            mainwindow->show();
+            if (correct_pswd_hash[i] != hash[i])
+            {
+                status_label->setText(QString("Status: Wrong password"));
+                password_edit->setText(QString(""));
+                return;
+            }
         }
-        else
-        {
-            status_label->setText(QString("Status: Wrong password"));
-            password_edit->setText(QString(""));
-        }
+
+        status_label->setText(QString("Status: Login succeed"));
+        this->close();
+        mainwindow->show();
+
     }
     else // set password
     {
