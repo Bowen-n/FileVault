@@ -60,71 +60,62 @@ void send_pid()
 int main(int argc, char *argv[])
 {
     // socket
-    sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_SAFEBOX);
-    if (sock_fd < 0)
-        return -1;
+    // sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_SAFEBOX);
+    // if (sock_fd < 0)
+    //     return -1;
+    // send_pid();
 
-    struct passwd *pw;
     int authentication = 0; // check if authentication succeed
-
-    // 获取当前用户所有信息
-    pw = get_user();
-
-    // check_user()查看当前用户是否注册过保险箱，若有，则返回值为相应的密码，若无，则返回0
-    send_pid();
-    char *password = check_user(pw->pw_uid);
-    char input[100]; memset(input, 0, 100);
-    char *temp = (char*)malloc(100);
+    struct passwd *pw; pw = get_user(); // get user info
     
-    if (password)
+    // check login before, and get password
+    uint8_t pswd_hash[SHA256_BYTES];
+    int login_before = check_user(pw->pw_uid, pswd_hash);
+
+    // get password input
+    char input[100]; memset(input, 0, 100);
+    
+    if (login_before)
     {
         printf("Please enter your password \n");
         scanf("%s", input); getchar();
-        if (strcmp(password, input) == 0)
+
+        uint8_t input_hash[SHA256_BYTES];
+        sha256(input, strlen(input), input_hash);
+
+        // check password
+        int password_check = 1;
+        for(int i=0; i<SHA256_BYTES; i++)
+        {
+            if(input_hash[i] != pswd_hash[i])
+            {
+                printf("Wrong password \n");
+                password_check = 0;
+                authentication = 0;
+                break;
+            }
+        }
+
+        if(password_check == 1)
         {
             printf("Welcome \n");
             authentication = 1;
         }
-        else
-            printf("Wrong password \n");
 	
     }
     else
     {
         printf("Creating a new safebox, please set the password\n");
         scanf("%s", input); getchar();
-        FILE *fp;
-
-        send_pid();
-        if (!(fp=fopen("/home/safebox/password.dat","a+")))
-        {
-            printf("Error in open file!\n");
-            return -1;
-        }
-        // 将int型的账号密码转为字符串
-        char uid[100];
-        sprintf(uid, "%d", pw->pw_uid);
-
-        // 这部分不知道为啥，不能两个同时加密后再同时fprintf()写入，会有问题，我猜是buf1和buf2内存冲突了
-        // 所以我就换了一下思路，一个一个写入fp
-        char *buf1 = (char *)malloc(50);
-        base64_encode(uid, &buf1);
-        fprintf(fp, "\n%s ", buf1);
-        free(buf1);
-
-        char *buf2 = (char *)malloc(50);
-        base64_encode(input, &buf2);
-        fprintf(fp, "%s", buf2);
-        free(buf2);
+        
+        set_password(input);
 
         printf("Successfully create a safebox, welcome!\n");
-        fclose(fp);
         authentication = 1;
 	
-	char username[COMMAND_MAX_LEN]; memset(username, 0, COMMAND_MAX_LEN);
-	strcpy(username, getlogin());
-	chdir("/home/safebox");
-	mkdir(username, 0777);
+        // create dir
+        chdir("/home/safebox");
+        mkdir(pw->pw_name, 0777);
     }
 
     if (authentication == 0)
@@ -135,12 +126,11 @@ int main(int argc, char *argv[])
     memset(display_pwd, 0, MAX_PATH_LEN);
     strcpy(pwd, "/home/safebox/");
     strcpy(root, "/home/safebox/");
-    strcat(pwd, getlogin()); // TODO: should be modified to current user safebox directory
-    strcat(root, getlogin());
+    strcat(pwd, pw->pw_name); // TODO: should be modified to current user safebox directory
+    strcat(root, pw->pw_name);
     strcpy(display_pwd, "");
     
     chdir(root);
-
 
 
     // interactive terminal

@@ -6,8 +6,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "sha256.h"
 
 struct passwd * get_user();
-char* check_user(int);
-
+int check_user(int uid, uint8_t ret_pswd[SHA256_BYTES]);
+int set_password(char* pswd);
+void reset_password(char* pswd);
 #endif

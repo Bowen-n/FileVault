@@ -562,61 +562,14 @@ int exec_chpswd(char splited_cmd[][COMMAND_MAX_LEN], int cmd_count)
     char ID[100]; memset(ID, 0, 100);
     char password[100]; memset(password, 0, 100);
     
-
     switch(cmd_count)
     {
 	case 1:
 	{
-	    
-	    if (!(fp = fopen("/home/safebox/password.dat", "r+")))
-	    {
-		printf("Error openning password.dat.\n");
-		break;
-	    }
-
-	    if (!(new_fp = fopen("/home/safebox/password_temp.dat", "w")))
-	    {
-		printf("Error openning password_temp.dat.\n");
-		break;
-	    }
-
-	    else
-	    {
-		
-		while(fscanf(fp, "%s", ID))
-		{
-		    base64_decode(ID, &buf_ID);
-		    if(atoi(buf_ID) == getuid())
-		    {
-			printf("enter new password.\n");
-			char *new_pswd = (char*)malloc(100);
-			char *buf_new = (char*)malloc(100);
-			scanf("%s", new_pswd); getchar();
-			
-			fprintf(new_fp, "%s", ID);
-			free(buf_ID);
-			base64_encode(new_pswd, &buf_new);
-			fprintf(new_fp, " %s\n", buf_new);
-			free(buf_new);
-			break;
-		    }
-		    else
-		    {
-			fprintf(new_fp, "%s", ID);
-			fscanf(fp, " %s", password);
-			fprintf(new_fp, " %s\n", password);
-		    }
-		    if(feof(fp))
-		    {
-			break;
-		    }
-		}
-		remove("/home/safebox/password.dat");
-		rename("/home/safebox/password_temp.dat", "/home/safebox/password.dat");
-	    }
-	    fclose(fp);
-	    fclose(new_fp);
-	    printf("success.\n");
+	    printf("enter new password.\n");
+        char *new_pswd = (char*)malloc(100);
+        scanf("%s", new_pswd); getchar();
+        reset_password(new_pswd);
 	    break;
 	}
 	default:
