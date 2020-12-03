@@ -60,10 +60,10 @@ void send_pid()
 int main(int argc, char *argv[])
 {
     // socket
-    // sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_SAFEBOX);
-    // if (sock_fd < 0)
-    //     return -1;
-    // send_pid();
+    sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_SAFEBOX);
+    if (sock_fd < 0)
+        return -1;
+    send_pid();
 
     int authentication = 0; // check if authentication succeed
     struct passwd *pw; pw = get_user(); // get user info
